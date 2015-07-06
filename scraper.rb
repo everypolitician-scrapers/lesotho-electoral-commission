@@ -19,7 +19,7 @@ def constituency_list(url)
 end
 
 def scrape_candidates(url, district_id)
-  warn "Getting #{url}"
+  # warn "Getting #{url}"
   noko = noko_for(url)
   table = noko.css('table')
 
@@ -48,7 +48,7 @@ def scrape_candidates(url, district_id)
     added += 1
     ScraperWiki.save_sqlite([:id], data)
   end
-  puts "Added #{added}"
+  puts "Added #{added} candidates for district #{district_id}"
   binding.pry if added == 0
 end
 

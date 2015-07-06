@@ -56,6 +56,10 @@ end
 constituency_list(@BASE).each do |a|
   url = URI.join @BASE, a.attr('href')
   id = a.text[/#\s*(\d+)/, 1].to_i
-  scrape_candidates(url, id)
+  begin
+    scrape_candidates(url, id)
+  rescue => e
+    warn e
+  end
 end
 

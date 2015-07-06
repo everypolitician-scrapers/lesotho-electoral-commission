@@ -15,20 +15,21 @@ end
 
 def constituency_list(url)
   noko = noko_for(url)
-  noko.css('ul#nav a[href*="?"]/@href').map(&:text)
+  noko.css('ul#nav a[href*="?"]')
 end
 
-def scrape_candidates(url)
+def scrape_candidates(url, district_id)
   warn "Getting #{url}"
   noko = noko_for(url)
   table = noko.css('table')
 
-  district = table.xpath('.//tr/td[contains(.,"DISTRICT")]').text.sub('DISTRICT:','').gsub(/[[:space:]]+/, ' ').strip
+  district = table.xpath('.//tr/td[contains(.,"DISTRICT")]').text.sub(/DISTRICT:?/,'').gsub(/[[:space:]]+/, ' ').strip
   binding.pry if district.empty?
 
-  table.xpath('tr[contains(.,"Surname")]/following-sibling::tr').each do |tr|
+  added = 0
+  table.xpath('tr').each do |tr|
     tds = tr.css('td')
-    next if tds[4].text.gsub(/[[:space:]]+/,' ').strip.empty?
+    next unless tds[4].text.include? district_id.to_s
     id = tds[0].text.strip.to_i 
 
     data = { 
@@ -38,19 +39,23 @@ def scrape_candidates(url)
       party: tds[3].text.strip,
       district: district,
       area: tds[4].text.strip,
-      area_id: tds[4].text.strip[/#\s*(\d+)/, 1],
+      area_id: district_id,
       gender: tds[6].text.include?('1') ? 'male' : tds[7].text.include?('1') ? 'female' : '',
       age: tds[8].text.strip,
       source: url.to_s,
     }
-    puts data
+    # puts data
+    added += 1
     ScraperWiki.save_sqlite([:id], data)
   end
+  puts "Added #{added}"
+  binding.pry if added == 0
 end
 
 @BASE = 'http://candidates.iec.org.ls/index.php?id=tele'
-constituency_list(@BASE).each do |link|
-  url = URI.join @BASE, link
-  scrape_candidates(url)
+constituency_list(@BASE).each do |a|
+  url = URI.join @BASE, a.attr('href')
+  id = a.text[/#\s*(\d+)/, 1].to_i
+  scrape_candidates(url, id)
 end
 

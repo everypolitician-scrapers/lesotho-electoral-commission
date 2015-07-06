@@ -18,7 +18,7 @@ def constituency_list(url)
   noko.css('ul#nav a[href*="?"]')
 end
 
-def scrape_candidates(url, district_id)
+def scrape_candidates(url, const_id)
   # warn "Getting #{url}"
   noko = noko_for(url)
   table = noko.css('table')
@@ -29,26 +29,26 @@ def scrape_candidates(url, district_id)
   added = 0
   table.xpath('tr').each do |tr|
     tds = tr.css('td')
-    next unless tds[4].text.include? district_id.to_s
+    next unless tds[4].text.include? const_id.to_s
     id = tds[0].text.strip.to_i 
 
     data = { 
       id: "#{district}-#{id}",
-      family_name: tds[1].text.strip,
-      given_name: tds[2].text.strip,
+      family_name: tds[1].text.gsub(/[[:space:]]+/, '').strip,
+      given_name: tds[2].text.gsub(/[[:space:]]+/, '').strip,
       party: tds[3].text.strip,
       district: district,
-      area: tds[4].text.strip,
-      area_id: district_id,
+      constituency: tds[4].text.strip,
+      constituency_id: const_id,
       gender: tds[6].text.include?('1') ? 'male' : tds[7].text.include?('1') ? 'female' : '',
       age: tds[8].text.strip,
       source: url.to_s,
     }
     # puts data
     added += 1
-    ScraperWiki.save_sqlite([:id], data)
+    ScraperWiki.save_sqlite([:id, :family_name, :given_name, :party], data)
   end
-  puts "Added #{added} candidates for district #{district_id}"
+  puts "Added #{added} candidates for district #{const_id}"
   binding.pry if added == 0
 end
 
